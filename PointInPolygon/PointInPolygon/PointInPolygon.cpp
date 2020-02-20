@@ -1,55 +1,39 @@
 #include "PointInPolygon.h"
 #include <cmath>
+#include <algorithm>
 
 const double PointInPolygon::MIN = numeric_limits<double>::min();
 const double PointInPolygon::MAX = numeric_limits<double>::max();
 
-bool PointInPolygon::contains(const Point& p, const Figure& figure)
-{
-	int number_of_intersections = 0;
-	for (auto& edge : figure.edges) {
-		if (isIntersectionBetweenRayAndEdge(p, edge))
-			number_of_intersections++;
-	}
-	return (number_of_intersections % 2 == 0) ? false : true;
-}
-
-bool PointInPolygon::isIntersectionBetweenRayAndEdge(const Point& p, const Edge& edge)
-{
-	double m_red, m_blue;
-	Point tmp_p = p;
-	const Point& a = edge.a, & b = edge.b;
+int PointInPolygon::isIntersectionBetweenRayAndEdge2(const Point& p, const Edge& edge) {
+	const auto& a = edge.a, & b = edge.b;
 	if (a.y > b.y)
-		return isIntersectionBetweenRayAndEdge(p, Edge{ b, a });
-	if (pointsIsAlmostEqual(p.y, a.y) || pointsIsAlmostEqual(p.y, b.y))
-		return true;
-	if (tmp_p.y<a.y || tmp_p.y>b.y)
-		return false;
-	else if (tmp_p.x >= fmax(a.x, b.x))
-		return false;
+		return isIntersectionBetweenRayAndEdge2(p, Edge{ b, a });
+	else if (p == a || p == b)
+		return 0;
+	else if (Point::pointsIsAlmostEqual(p.y, a.y) || Point::pointsIsAlmostEqual(p.y, b.y))
+		return isIntersectionBetweenRayAndEdge2({ p.x, p.y + numeric_limits<float>::epsilon() * abs(p.y) }, edge);
+	else if (p.y > b.y || p.y < a.y || p.x > max(a.x, b.x))
+		return -1;
+	else if (p.x < min(a.x, b.x))
+		return 1;
 	else {
-		if (tmp_p.x < fmin(a.x, b.x))
-			return true;
-		else {
-			if (!pointsIsAlmostEqual(a.x,b.x))
-				m_red = (b.y - a.y) / (b.x - a.x);
-			else
-				m_red = MAX;
-			
-			if (!pointsIsAlmostEqual(a.x, tmp_p.x))
-				m_blue = (tmp_p.y - a.y) / (tmp_p.x - a.x);
-			else
-				m_blue = MAX;
-
-			if (pointsIsAlmostEqual(m_blue,m_red))
-				return false;
-			else
-				return m_blue>=m_red;
-		}
+		auto blue_angle = !Point::pointsIsAlmostEqual(a.x, p.x) ? (p.y - a.y) / (p.x - a.x) : MAX;
+		auto red_angle = !Point::pointsIsAlmostEqual(a.x, b.x) ? (b.y - a.y) / (b.x - a.x) : MAX;
+		return Point::pointsIsAlmostEqual(blue_angle, red_angle) ? 0 : blue_angle >= red_angle ? 1 : -1;
 	}
 }
 
-bool PointInPolygon::pointsIsAlmostEqual(const double& x, const double& y)
+bool PointInPolygon::contains2(const Point& p, const Figure& figure)
 {
-	return abs(x - y) <= numeric_limits<double>::epsilon() * fmax(abs(x), abs(y));
+	bool c = 0;
+	for (auto& e : figure.edges) {
+		int intersects = isIntersectionBetweenRayAndEdge2(p, e);
+		if (intersects == 1)
+			c = !c;
+		else if (!intersects)
+			return true;
+	}
+	return c;
 }
+
