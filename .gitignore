@@ -381,6 +381,9 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 
+cmake-build-debug
+.idea/workspace.xml
+
 # Backup folder for Package Reference Convert tool in Visual Studio 2017
 MigrationBackup/
 
